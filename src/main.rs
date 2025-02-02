@@ -1,63 +1,45 @@
-use std::env;
-use std::path::Path;
-use std::io::Read;
-use std::fs::File;
+mod cmdline;
+use cmdline::*;
 
-use goblin::elf::Elf;
+mod elf;
+use elf::*;
 
-use walkdir::WalkDir;
 
-fn print_usage() {
-    println!("Usage: ./binary <directory> <function_name>");
-}
-
-fn is_elf_file(path: &Path) -> bool {
-    if let Ok(mut file) = File::open(path) {
-        let mut buffer = [0u8; 4];
-        if file.read_exact(&mut buffer).is_ok() {
-            return &buffer == b"\x7fELF";
-        }
-    }
-    false
-}
-
-fn contains_function(path: &Path, f_name: &str) -> bool {
-    if let Ok(mut file) = File::open(path) {
-        let mut buffer = Vec::new();
-        if file.read_to_end(&mut buffer).is_ok() {
-            if let Ok(elf) = Elf::parse(&buffer) {
-                for sym in elf.dynsyms.iter() {
-                    if let Some(name) = elf.dynstrtab.get(sym.st_name) {
-                        if let Ok(name) = name {
-                            if name == f_name {
-                                return true;
-                            }
-                        }
-                    } 
+fn main() {
+    let parse_result = parse_cmdline();
+    match parse_result {
+        Ok(mode_and_opt) => {
+            match mode_and_opt.mode {
+                Mode::AUTO => {
+                    let dir = mode_and_opt.dir;
+                    let funcs = mode_and_opt.parsed_funcs.unwrap();
+                    println!("[-][AUTO]: Running in auto mode.");
+                    println!("[-][AUTO]: Target directory - {}", &dir);
+                    println!("[-][AUTO]: Search functions - {:?}", funcs);
+                    search_elf(dir.as_str());
+                    search_function(dir.as_str(), &funcs);
+                }
+                Mode::CERT => {
+                    println!("[E][CERT]: Not implemented yet, sorry!");
+                }
+                Mode::ELF => {
+                    let dir = mode_and_opt.dir;
+                    println!("[-][ELF]: Running in elf mode.");
+                    println!("[-][ELF]: Target directory - {}", &dir);
+                    search_elf(dir.as_str());
+                }
+                Mode::FUNC => {
+                    let dir = mode_and_opt.dir;
+                    let funcs = mode_and_opt.parsed_funcs.unwrap();
+                    println!("[-][ELF]: Running in elf mode.");
+                    println!("[-][ELF]: Target directory - {}", &dir);
+                    println!("[-][AUTO]: Search functions - {:?}", funcs);
+                    search_function(dir.as_str(), &funcs);
                 }
             }
         }
-    }
-    false
-}
-
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        print_usage();
-        std::process::exit(1);
-    }
-
-    let target_dir = &args[1];
-    let target_function = &args[2];
-
-    for entry in WalkDir::new(target_dir).into_iter().filter_map(|e| e.ok()) {
-        let path = entry.path();
-
-        if path.is_file() && is_elf_file(path) {
-            if contains_function(path, target_function) {
-                println!("Function {}() found in {}", target_function, path.display());
-            }
+        Err(err) => {
+            println!("{}", err);
         }
     }
 }
