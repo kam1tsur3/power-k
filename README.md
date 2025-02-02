@@ -4,7 +4,7 @@ power-k is a tool of searching for vulnerable functions being used.
 It is used against a file system of a target system.  
 
 ## Usage 
-After build using Cargo, it can be used like a below.
+After build using Cargo, it can be used like a below.  
 `./power-k -m auto -d ./extracted_firmware_path -f system,strcpy,strncpy`
 
 ## Running mode
