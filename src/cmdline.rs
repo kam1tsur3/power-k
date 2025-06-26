@@ -11,7 +11,7 @@ use clap::Parser;
 #[clap(
   name = "power-k",
   author = "kam1tsur3",
-  version = "v0.1",
+  version = "v0.2",
   about = "A tool for IoT research"
 )]
 struct AppArg {
